@@ -1,48 +1,34 @@
-node{
+node {
     
-    stage('checkout'){
-        git 'https://github.com/shubhamkushwah123/insurance-project-demo.git'
+    stage('Git Checkout') {
+        git branch: 'main', url: 'https://github.com/pthapagit/insurance-final-capstone.git'
     }
     
-    stage('maven build'){
+    stage('maven clean build and package')
         sh 'mvn clean package'
+    
+    stage('containerize application'){
+        sh 'docker build -t pthapa97/insure-me:1.0 .'
     }
     
-    stage('containerize'){
-      //  sh 'docker build -t shubhamkushwah123/insure-me:1.0 .'
-    }
-    
-    stage('Release'){
-        withCredentials([string(credentialsId: 'dockerHubPwd', variable: 'dockerHubPwd')]) {
-      //  sh "docker login -u shubhamkushwah123 -p ${dockerHubPwd}"
-     //   sh 'docker push shubhamkushwah123/insure-me:1.0'
+    stage('release image to docker hub'){
+        withCredentials([string(credentialsId: 'DockerHubPwd', variable: 'DockerHubPwd')]) {
+    // some block
+        sh 'docker login -u pthapa97 -p ${DockerHubPwd}'
+        sh 'docker push pthapa97/insure-me:1.0'
         }
     }
     
-    stage('Deploy to Test'){
-     ansiblePlaybook become: true, credentialsId: 'ansible-key', disableHostKeyChecking: true, installation: 'ansible', inventory: '/etc/ansible/hosts', playbook: 'configure-test-server.yml', vaultTmpPath: ''
+    stage('deploy to test server with ansible'){
+        ansiblePlaybook become: true, credentialsId: 'ansible-key', disableHostKeyChecking: true, installation: 'ansible', inventory: '/etc/ansible/hosts', playbook: 'configure-test-server.yml', vaultTmpPath: ''
     }
     
-    stage('checkout regression test source code'){
-        git 'https://github.com/shubhamkushwah123/my-selenium-test-app.git'
+    stage('Start test-app build'){
+        build 'capstone-test-app'
     }
     
-    stage('build test scripts'){
-        sh 'mvn clean package assembly:single'
+    stage('start prod build'){
+        build 'Final-Prod-Server'
     }
-    
-    stage('execute selenium test script'){
-        sh 'java -jar target/my-app-test-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
-    }
-
-    stage('checkout'){
-        git 'https://github.com/shubhamkushwah123/insurance-project-demo.git'
-    }
-    
-     stage('Deploy to Test'){
-     ansiblePlaybook become: true, credentialsId: 'ansible-key', disableHostKeyChecking: true, installation: 'ansible', inventory: '/etc/ansible/hosts', playbook: 'configure-prod-server.yml', vaultTmpPath: ''
-    }
-    
-    
     
 }
